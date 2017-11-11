@@ -44,7 +44,7 @@ namespace plusar
     template<typename T, typename Fn>
     constexpr stream<T, Fn> make_stream(Fn && fn)
     {
-        return stream<T, Fn>(std::forward<Fn>(fn));
+        return stream<T, typename std::decay<Fn>::type>(std::forward<typename std::decay<Fn>::type>(fn));
     }
 
     template<typename T, typename Fn>

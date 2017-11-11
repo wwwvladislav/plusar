@@ -14,7 +14,7 @@ namespace plusar
     template<typename T, typename Fn>
     stream<T, Fn> environment::source(Fn && source_fn)
     {
-        return stream<T, Fn>(std::forward<Fn>(source_fn));
+        return make_stream<T>(std::forward<typename std::decay<Fn>::type>(source_fn));
     }
 }
 
