@@ -9,7 +9,7 @@ Plusar is an open source stream processing framework.
 [badge.godbolt]: https://img.shields.io/badge/try%20it-on%20godbolt-orange.svg
 
 [license]: https://github.com/wwwVladislav/plusar/blob/master/LICENSE.md
-[godbolt]: https://godbolt.org/g/ws6b3h
+[godbolt]: https://godbolt.org/g/M9Ccd7
 
 ### Features
 * The realtime stream processing capabilities.
@@ -30,12 +30,12 @@ int main(int argc, char **argv)
 
     using tuple2 = std::tuple<int, int>;
 
-    int v = env.source<tuple2>([]() { return std::make_tuple(1, 2); })
-       .map<int>([](tuple2 const &t) { return std::get<0>(t) + std::get<1>(t); })
-       .take(10)
-       .map<int>([](int v) { return v * v; })
-       .reduce<int>(0, std::plus<>())
-       .collect();
+    int v = env.source<tuple2>([]() { return plusar::optional<tuple2>(std::make_tuple(1, 2)); })
+               .map<int>([](tuple2 const &t) { return std::get<0>(t) + std::get<1>(t); })
+               .take(10)
+               .map<int>([](int v) { return v * v; })
+               .reduce<int>(0, std::plus<>())
+               .collect();
 
     std::cout << v << std::endl;    // Output 90
     return 0;
