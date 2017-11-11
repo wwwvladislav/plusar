@@ -2,6 +2,15 @@
 
 Plusar is an open source stream processing framework.
 
+[![license][badge.license]][license]
+[![godbolt][badge.godbolt]][godbolt]
+
+[badge.license]: https://img.shields.io/badge/license-MIT-blue.svg
+[badge.godbolt]: https://img.shields.io/badge/try%20it-on%20godbolt-orange.svg
+
+[license]: https://github.com/wwwVladislav/plusar/blob/master/LICENSE.md
+[godbolt]: https://godbolt.org/g/ws6b3h
+
 ### Features
 * The realtime stream processing capabilities.
 * Fast as speed of light, rapid like a pulsars jet.
