@@ -43,7 +43,9 @@ int main(int argc, char **argv)
 ```
 
 ## Building Plusar from Source
+```
 mkdir build
 cd build
 cmake ..
 make
+```
