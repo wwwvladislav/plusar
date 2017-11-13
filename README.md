@@ -44,6 +44,8 @@ int main(int argc, char **argv)
 
 ## Building Plusar from Source
 ```
+git submodule init
+git submodule update
 mkdir build
 cd build
 cmake ..
