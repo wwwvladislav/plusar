@@ -9,7 +9,7 @@ namespace plusar
     class stream
     {
         Fn _fn;
-        mutable size_t _count = 0;
+        size_t _count = 0;
 
         stream() = delete;
         stream & operator = (stream const &) = delete;
@@ -55,7 +55,7 @@ namespace plusar
         constexpr T collect() const &;
         constexpr T collect() &&;
 
-        constexpr optional<T> next() const &;
+        constexpr optional<T> next() &;
         constexpr optional<T> next() &&;
 
         constexpr size_t count() const & noexcept;
@@ -108,7 +108,7 @@ namespace plusar
     constexpr auto stream<T, Fn>::map(FnR && fn) const &
     {
         stream self(*this);
-        return make_stream([self = std::move(self), fn = std::forward<FnR>(fn)]()
+        return make_stream([self = std::move(self), fn = std::forward<FnR>(fn)]() mutable
         {
             optional<T> sv = self.next();
             return sv ? make_optional(fn(*sv)) : nullopt;
@@ -120,7 +120,7 @@ namespace plusar
     constexpr auto stream<T, Fn>::map(FnR && fn) &&
     {
         stream self(*this);
-        return make_stream([self = std::move(self), fn = std::forward<FnR>(fn)]()
+        return make_stream([self = std::move(self), fn = std::forward<FnR>(fn)]() mutable
         {
             optional<T> sv = self.next();
             return sv ? make_optional(fn(*sv)) : nullopt;
@@ -132,7 +132,7 @@ namespace plusar
     constexpr auto stream<T, Fn>::reduce(R && v, FnR && fn) const &
     {
         stream self(*this);
-        return make_stream([self = std::move(self), v = std::forward<R>(v), fn = std::forward<FnR>(fn)]()
+        return make_stream([self = std::move(self), v = std::forward<R>(v), fn = std::forward<FnR>(fn)]() mutable
         {
             R res = v;
             for(optional<T> v = self.next(); v; v = self.next())
@@ -146,7 +146,7 @@ namespace plusar
     constexpr auto stream<T, Fn>::reduce(R && v, FnR && fn) &&
     {
         stream self(*this);
-        return make_stream([self = std::move(self), v = std::forward<R>(v), fn = std::forward<FnR>(fn)]()
+        return make_stream([self = std::move(self), v = std::forward<R>(v), fn = std::forward<FnR>(fn)]() mutable
         {
             R res = v;
             for(optional<T> v = self.next(); v; v = self.next())
@@ -159,7 +159,7 @@ namespace plusar
     constexpr auto stream<T, Fn>::take(size_t limit) const &
     {
         stream self(*this);
-        return make_stream([self = std::move(self), limit] () -> optional<T>
+        return make_stream([self = std::move(self), limit] () mutable -> optional<T>
         {
             if (self.count() >= limit)
                 return nullopt;
@@ -171,7 +171,7 @@ namespace plusar
     constexpr auto stream<T, Fn>::take(size_t limit) &&
     {
         stream self(*this);
-        return make_stream([self = std::move(self), limit] () -> optional<T>
+        return make_stream([self = std::move(self), limit] () mutable -> optional<T>
         {
             if (self.count() >= limit)
                 return nullopt;
@@ -208,7 +208,7 @@ namespace plusar
     }
 
     template<typename T, typename Fn>
-    constexpr optional<T> stream<T, Fn>::next() const &
+    constexpr optional<T> stream<T, Fn>::next() &
     {
         optional<T> v = _fn();
         if (v) ++_count;
