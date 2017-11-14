@@ -6,10 +6,12 @@ set(HEADERS
 
 set(SOURCES
     main.cpp
+    test_stream.cpp
 )
 
 include_directories(
     ../plusar-core/include
+    ${LIBS_DIR}/Catch2/single_include
 )
 
 add_executable(plusar-tests ${HEADERS} ${SOURCES})

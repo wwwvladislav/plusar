@@ -7,12 +7,12 @@ namespace plusar
     class environment
     {
     public:
-        template<typename T, typename Fn>
-        stream<T, std::decay_t<Fn>> source(Fn && fn);
+        template<typename Fn>
+        stream<std::decay_t<Fn>> source(Fn && fn);
     };
 
-    template<typename T, typename Fn>
-    stream<T, std::decay_t<Fn>> environment::source(Fn && fn)
+    template<typename Fn>
+    stream<std::decay_t<Fn>> environment::source(Fn && fn)
     {
         return make_stream(std::forward<Fn>(fn));
     }

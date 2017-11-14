@@ -31,6 +31,11 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 #*********************************************************
+# libraries directory
+#*********************************************************
+set(LIBS_DIR "${CMAKE_SOURCE_DIR}/libs")
+
+#*********************************************************
 # output directory
 #*********************************************************
 set(PLUSAR_OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/output)
@@ -90,5 +95,6 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_subdirectory(plusar-core    plusar-core)
-add_subdirectory(plusar-tests   plusar-tests)
+add_subdirectory(plusar-core     plusar-core)
+add_subdirectory(plusar-tests    plusar-tests)
+add_subdirectory(plusar-examples plusar-examples)
