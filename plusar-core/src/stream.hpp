@@ -2,6 +2,7 @@
 #define _stream_hpp_54456_
 #include "type_traits.hpp"
 #include "optional.hpp"
+#include <initializer_list>
 
 namespace plusar
 {
@@ -66,6 +67,16 @@ namespace plusar
     constexpr auto make_stream(Fn && fn)
     {
         return stream<std::decay_t<Fn>, T>(std::forward<Fn>(fn));
+    }
+
+    template <typename T>
+    constexpr auto make_stream(std::initializer_list<T> il)
+    {
+        auto fn = [il = std::move(il), it = il.begin()]() mutable
+        {
+            return it == il.end() ? nullopt : make_optional(*(it++));
+        };
+        return stream<decltype(fn), T>(std::move(fn));
     }
 
     template<typename Fn, typename T>
