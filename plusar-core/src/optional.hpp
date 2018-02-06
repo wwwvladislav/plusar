@@ -29,26 +29,26 @@ namespace plusar
     class optional;
 
     template<typename T, typename U>
-    using is_convertible_from =
-        disjunction<
-            std::is_constructible<T, const optional<U>&>,
-            std::is_constructible<T, optional<U>&>,
-            std::is_constructible<T, const optional<U>&&>,
-            std::is_constructible<T, optional<U>&&>,
-            std::is_convertible<const optional<U>&, T>,
-            std::is_convertible<optional<U>&, T>,
-            std::is_convertible<const optional<U>&&, T>,
-            std::is_convertible<optional<U>&&, T>
-        >;
+    constexpr bool is_convertible_from() noexcept
+    {
+        return std::is_constructible<T, const optional<U>&>::value
+                || std::is_constructible<T, optional<U>&>::value
+                || std::is_constructible<T, const optional<U>&&>::value
+                || std::is_constructible<T, optional<U>&&>::value
+                || std::is_convertible<const optional<U>&, T>::value
+                || std::is_convertible<optional<U>&, T>::value
+                || std::is_convertible<const optional<U>&&, T>::value
+                || std::is_convertible<optional<U>&&, T>::value;
+    }
 
     template<typename T, typename U>
-        using is_assignable_from =
-        disjunction<
-            std::is_assignable<T&, const optional<U>&>,
-            std::is_assignable<T&, optional<U>&>,
-            std::is_assignable<T&, const optional<U>&&>,
-            std::is_assignable<T&, optional<U>&&>
-        >;
+    constexpr bool is_assignable_from() noexcept
+    {
+        return std::is_assignable<T&, const optional<U>&>::value
+                || std::is_assignable<T&, optional<U>&>::value
+                || std::is_assignable<T&, const optional<U>&&>::value
+                || std::is_assignable<T&, optional<U>&&>::value;
+    }
 
     template<typename T>
     class optional_payload
@@ -120,10 +120,8 @@ namespace plusar
         }
 
         // move assignment
-        optional_payload & operator = (optional_payload && other) noexcept(conjunction<
-                                                                            std::is_nothrow_move_constructible<T>,
-                                                                            std::is_nothrow_move_assignable<T>
-                                                                           >())
+        optional_payload & operator = (optional_payload && other) noexcept(std::is_nothrow_move_constructible<T>::value
+                                                                           && std::is_nothrow_move_assignable<T>::value)
         {
             if (!_is_empty && !other._is_empty)
                 get() = std::move(other.get());
@@ -192,11 +190,10 @@ namespace plusar
     template<typename T>
     class optional: private optional_base<T>
     {
-        static_assert(conjunction<
-                        negation<std::is_same<std::remove_cv_t<T>, nullopt_t>>,
-                        negation<std::is_same<std::remove_cv_t<T>, in_place_t>>,
-                        negation<std::is_reference<T>>
-                      >(), "Invalid instantiation of optional<T>");
+        static_assert(!std::is_same<std::remove_cv_t<T>, nullopt_t>::value
+                      && !std::is_same<std::remove_cv_t<T>, in_place_t>::value
+                      && !std::is_reference<T>::value
+                , "Invalid instantiation of optional<T>");
 
         using base = optional_base<T>;
 
@@ -209,13 +206,8 @@ namespace plusar
         // converting constructors
         template <
             typename U = T,
-            std::enable_if_t<
-                conjunction<
-                    negation<std::is_same<optional<T>, std::decay_t<U>>>,
-                    std::is_constructible<T, U&&>
-                >::value,
-                bool
-            > = true
+            std::enable_if_t<!std::is_same<optional<T>, std::decay_t<U>>::value
+                             && std::is_constructible<T, U&&>::value, bool> = true
         >
         constexpr optional(U && val):
             base(in_place, std::forward<U>(val))
@@ -223,14 +215,9 @@ namespace plusar
 
         template <
             typename U,
-            std::enable_if_t<
-                conjunction<
-                    negation<std::is_same<T, U>>,
-                    std::is_constructible<T, const U&>,
-                    negation<is_convertible_from<T, U>>
-                >::value,
-                bool
-            > = true
+            std::enable_if_t<!std::is_same<T, U>::value
+                             && std::is_constructible<T, const U&>::value
+                             && !is_convertible_from<T, U>(), bool> = true
         >
         constexpr optional(const optional<U>& val)
         {
@@ -239,14 +226,9 @@ namespace plusar
 
         template <
             typename U,
-            std::enable_if_t<
-                conjunction<
-                    negation<std::is_same<T, U>>,
-                    std::is_constructible<T, U&&>,
-                    negation<is_convertible_from<T, U>>
-                >::value,
-                bool
-            > = true
+            std::enable_if_t<!std::is_same<T, U>::value
+                             && std::is_constructible<T, U&&>::value
+                             && !is_convertible_from<T, U>(), bool> = true
         >
         constexpr optional(optional<U>&& val)
         {
@@ -262,17 +244,11 @@ namespace plusar
 
         template<typename U = T>
         std::enable_if_t<
-            conjunction<
-                negation<std::is_same<optional<T>, std::decay_t<U>>>,
-                std::is_constructible<T, U>,
-                negation<conjunction<
-                            std::is_scalar<T>,
-                            std::is_same<T, std::decay_t<U>>
-                        >
-                >,
-                std::is_assignable<T&, U>
-            >::value,
-            optional &
+                !std::is_same<optional<T>, std::decay_t<U>>::value
+                && std::is_constructible<T, U>::value
+                && !(std::is_scalar<T>::value && std::is_same<T, std::decay_t<U>>::value)
+                && std::is_assignable<T&, U>::value
+            , optional &
         >
         operator = (U && rhs)
         {
@@ -285,14 +261,12 @@ namespace plusar
 
         template<typename U>
         std::enable_if_t<
-            conjunction<
-                negation<std::is_same<T, U>>,
-                std::is_constructible<T, const U&>,
-                std::is_assignable<T&, U>,
-                negation<is_convertible_from<T, U>>,
-                negation<is_assignable_from<T, U>>
-            >::value,
-            optional &
+                !std::is_same<T, U>::value
+                && std::is_constructible<T, const U&>::value
+                && std::is_assignable<T&, U>::value
+                && !is_convertible_from<T, U>()
+                && !is_assignable_from<T, U>()
+            , optional &
         >
         operator = (const optional<U>& rhs)
         {
@@ -310,14 +284,12 @@ namespace plusar
 
         template<typename U>
             std::enable_if_t<
-                conjunction<
-                    negation<std::is_same<T, U>>,
-                    std::is_constructible<T, U>,
-                    std::is_assignable<T&, U>,
-                    negation<is_convertible_from<T, U>>,
-                    negation<is_assignable_from<T, U>>
-                >::value,
-                optional &
+                    !std::is_same<T, U>::value
+                    && std::is_constructible<T, U>::value
+                    && std::is_assignable<T&, U>::value
+                    && !is_convertible_from<T, U>()
+                    && !is_assignable_from<T, U>()
+                , optional &
         >
         operator = (optional<U> && rhs)
         {
@@ -410,9 +382,8 @@ namespace plusar
         template<typename U>
         constexpr T value_or(U && or_val) const&
         {
-            static_assert(conjunction<
-                            std::is_copy_constructible<T>,
-                            std::is_convertible<U&&, T>>(),
+            static_assert(std::is_copy_constructible<T>::value
+                          && std::is_convertible<U&&, T>::value,
                           "Cannot return value");
 
             return !base::is_empty()
@@ -423,9 +394,8 @@ namespace plusar
         template<typename U>
         T value_or(U && or_val) &&
         {
-            static_assert(conjunction<
-                            std::is_move_constructible<T>,
-                            std::is_convertible<U&&, T>>(),
+            static_assert(std::is_move_constructible<T>::value
+                          && std::is_convertible<U&&, T>::value,
                           "Cannot return value");
 
             return !base::is_empty()

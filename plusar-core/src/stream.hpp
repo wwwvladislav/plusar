@@ -18,16 +18,12 @@ namespace plusar
 
     public:
         stream(stream const &) noexcept(std::is_nothrow_copy_constructible<Fn>());
-        stream(stream &&) noexcept(conjunction<
-                                                std::is_nothrow_move_constructible<Fn>,
-                                                std::is_nothrow_copy_constructible<Fn>
-                                            >());
+        stream(stream &&) noexcept(std::is_nothrow_move_constructible<Fn>::value
+                                   &&std::is_nothrow_copy_constructible<Fn>::value);
         ~stream() = default;
 
-        stream(Fn && fn) noexcept(conjunction<
-                                    std::is_nothrow_move_constructible<Fn>,
-                                    std::is_nothrow_copy_constructible<Fn>
-                                  >());
+        stream(Fn && fn) noexcept(std::is_nothrow_move_constructible<Fn>::value
+                                  && std::is_nothrow_copy_constructible<Fn>::value);
 
         template<
             typename... Args,
@@ -86,19 +82,15 @@ namespace plusar
     {}
 
     template<typename Fn, typename T>
-    stream<Fn, T>::stream(stream &&other) noexcept(conjunction<
-                                                std::is_nothrow_move_constructible<Fn>,
-                                                std::is_nothrow_copy_constructible<Fn>
-                                            >()):
+    stream<Fn, T>::stream(stream &&other) noexcept(std::is_nothrow_move_constructible<Fn>::value
+                                                   && std::is_nothrow_copy_constructible<Fn>::value):
         _fn(std::forward<Fn>(other._fn)),
         _count(other._count)
     {}
 
     template<typename Fn, typename T>
-    stream<Fn, T>::stream(Fn && fn) noexcept(conjunction<
-                                                std::is_nothrow_move_constructible<Fn>,
-                                                std::is_nothrow_copy_constructible<Fn>
-                                            >()):
+    stream<Fn, T>::stream(Fn && fn) noexcept(std::is_nothrow_move_constructible<Fn>::value
+                                             && std::is_nothrow_copy_constructible<Fn>::value):
         _fn(std::forward<Fn>(fn))
     {}
 
