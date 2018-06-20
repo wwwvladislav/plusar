@@ -25,9 +25,7 @@ int main(int argc, char **argv)
 {
     using tuple2 = std::tuple<int, int>;
 
-    plusar::environment env;
-
-    int v = env.source([]() { return plusar::make_optional(std::make_tuple(1, 2)); })
+    int v = plusar::make_stream([]() { return plusar::make_optional(std::make_tuple(1, 2)); })
        .map([](tuple2 const &t) { return std::get<0>(t) + std::get<1>(t); })
        .take(10)
        .map([](int v) { return v * v; })
