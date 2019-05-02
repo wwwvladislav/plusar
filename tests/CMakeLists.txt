@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(plusar-tests)
 
 set(HEADERS
+    catch.hpp
 )
 
 set(SOURCES
@@ -10,10 +11,7 @@ set(SOURCES
 )
 
 include_directories(
-    ../plusar-core/include
-    ${LIBS_DIR}/Catch2/single_include
+    ../include
 )
 
 add_executable(plusar-tests ${HEADERS} ${SOURCES})
-add_dependencies(plusar-tests plusar-core)
-target_link_libraries(plusar-tests plusar-core)

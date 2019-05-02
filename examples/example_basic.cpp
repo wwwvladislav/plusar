@@ -1,4 +1,4 @@
-#include <core/stream.hpp>
+#include <plusar/stream.hpp>
 #include <tuple>
 #include <iostream>
 #include <functional>

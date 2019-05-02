@@ -16,7 +16,7 @@ Plusar is an open source stream processing framework.
 
 ### Simple Example
 ```cpp
-#include <core/environment.hpp>
+#include <plusar/stream.hpp>
 #include <tuple>
 #include <iostream>
 #include <functional>
@@ -39,8 +39,6 @@ int main(int argc, char **argv)
 
 ## Building Plusar from Source
 ```
-git submodule init
-git submodule update
 mkdir build
 cd build
 cmake ..

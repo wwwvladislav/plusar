@@ -1,5 +1,5 @@
-#include <core/stream.hpp>
-#include <catch.hpp>
+#include <plusar/stream.hpp>
+#include "catch.hpp"
 #include <functional>
 #include <vector>
 #include <iterator>
