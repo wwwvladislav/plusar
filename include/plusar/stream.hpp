@@ -1,5 +1,4 @@
-#ifndef _stream_hpp_54456_
-#define _stream_hpp_54456_
+#pragma once
 #include "type_traits.hpp"
 #include "optional.hpp"
 #include <initializer_list>
@@ -231,5 +230,3 @@ namespace plusar
     template<typename Fn, typename T>
     constexpr size_t stream<Fn, T>::count() && noexcept         { return _count; }
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _memory_hpp_54456_
-#define _memory_hpp_54456_
+#pragma once
 
 namespace plusar
 {
@@ -11,5 +10,3 @@ namespace plusar
                       reinterpret_cast<const volatile char&>(arg)));
     }
 }
-
-#endif

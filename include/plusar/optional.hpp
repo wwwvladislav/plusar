@@ -1,5 +1,4 @@
-#ifndef _optional_hpp_54456_
-#define _optional_hpp_54456_
+#pragma once
 #include <stdexcept>
 #include <utility>
 #include "type_traits.hpp"
@@ -477,5 +476,3 @@ namespace plusar
         return optional<std::decay_t<T>> { std::forward<T>(val) };
     }
 }
-
-#endif
