@@ -17,6 +17,12 @@ TEST_CASE("Stream creation by functor", "[stream]" ) {
                 .collect() == 42);
 }
 
+TEST_CASE("Filter function", "[stream]" ) {
+    REQUIRE(make_stream({ 1, 2, 3 })
+                .filter([](int t) { return t % 2 == 0; })
+                .collect() == 2);
+}
+
 TEST_CASE("Map function", "[stream]" ) {
     REQUIRE(make_stream({ 21 })
                 .map([](int t) { return t * 2; })

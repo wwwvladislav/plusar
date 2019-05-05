@@ -29,6 +29,11 @@ namespace plusar
         >
         constexpr explicit stream(in_place_t, Args&&... args) noexcept(std::is_nothrow_constructible<Fn, Args...>());
 
+        template<typename FnPredicate>
+        constexpr auto filter(FnPredicate && pred) const &;
+        template<typename FnPredicate>
+        constexpr auto filter(FnPredicate && pred) &&;
+
         template<typename FnR>
         constexpr auto map(FnR && fn) const &;
         template<typename FnR>
@@ -98,6 +103,34 @@ namespace plusar
     constexpr stream<Fn, T>::stream(in_place_t, Args&&... args) noexcept(std::is_nothrow_constructible<Fn, Args...>()):
         _fn(std::forward<Args>(args)...)
     {}
+
+    template<typename Fn, typename T>
+    template<typename FnPredicate>
+    constexpr auto stream<Fn, T>::filter(FnPredicate && pred) const &
+    {
+        stream self(*this);
+        return make_stream([self = std::move(self), pred = std::forward<FnPredicate>(pred)]() mutable
+        {
+            for(optional<T> sv = self.next(); sv; sv = self.next())
+                if(pred(*sv))
+                    return sv; 
+            return optional<T>(nullopt);
+        });
+    }
+
+    template<typename Fn, typename T>
+    template<typename FnPredicate>
+    constexpr auto stream<Fn, T>::filter(FnPredicate && pred) &&
+    {
+        stream self(*this);
+        return make_stream([self = std::move(self), pred = std::forward<FnPredicate>(pred)]() mutable
+        {
+            for(optional<T> sv = self.next(); sv; sv = self.next())
+                if(pred(*sv))
+                    return sv; 
+            return optional<T>(nullopt);
+        });
+    }
 
     template<typename Fn, typename T>
     template<typename FnR>
