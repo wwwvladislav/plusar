@@ -54,5 +54,4 @@ TEST_CASE("Read next item from stream", "[stream]" ) {
     REQUIRE(s.next() == 0);
     REQUIRE(s.next() == 1);
     REQUIRE(s.next() == 2);
-    REQUIRE(s.count() == 3);
 }

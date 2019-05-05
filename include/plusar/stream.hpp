@@ -9,7 +9,6 @@ namespace plusar
     class stream
     {
         Fn _fn;
-        size_t _count = 0;
 
         stream() = delete;
         stream & operator = (stream const &) = delete;
@@ -53,9 +52,6 @@ namespace plusar
 
         constexpr optional<T> next() &;
         constexpr optional<T> next() &&;
-
-        constexpr size_t count() const & noexcept;
-        constexpr size_t count() && noexcept;
     };
 
     template <typename Fn, typename T = typename std::result_of_t<Fn()>::value_type>
@@ -76,15 +72,13 @@ namespace plusar
 
     template<typename Fn, typename T>
     stream<Fn, T>::stream(stream const &other) noexcept(std::is_nothrow_copy_constructible<Fn>()):
-        _fn(other._fn),
-        _count(other._count)
+        _fn(other._fn)
     {}
 
     template<typename Fn, typename T>
     stream<Fn, T>::stream(stream &&other) noexcept(std::is_nothrow_move_constructible<Fn>::value
                                                    && std::is_nothrow_copy_constructible<Fn>::value):
-        _fn(std::forward<Fn>(other._fn)),
-        _count(other._count)
+        _fn(std::forward<Fn>(other._fn))
     {}
 
     template<typename Fn, typename T>
@@ -163,8 +157,9 @@ namespace plusar
         stream self(*this);
         return make_stream([self = std::move(self), limit] () mutable -> optional<T>
         {
-            if (self.count() >= limit)
+            if (!limit)
                 return nullopt;
+            --limit;
             return self.next();
         });
     }
@@ -175,8 +170,9 @@ namespace plusar
         stream self(*this);
         return make_stream([self = std::move(self), limit] () mutable -> optional<T>
         {
-            if (self.count() >= limit)
+            if (!limit)
                 return nullopt;
+            --limit;
             return self.next();
         });
     }
@@ -212,21 +208,12 @@ namespace plusar
     template<typename Fn, typename T>
     constexpr optional<T> stream<Fn, T>::next() &
     {
-        optional<T> v = _fn();
-        if (v) ++_count;
-        return v;
+        return _fn();
     }
 
     template<typename Fn, typename T>
     constexpr optional<T> stream<Fn, T>::next() &&
     {
-        optional<T> v = _fn();
-        if (v) ++_count;
-        return v;
+        return _fn();
     }
-
-    template<typename Fn, typename T>
-    constexpr size_t stream<Fn, T>::count() const & noexcept    { return _count; }
-    template<typename Fn, typename T>
-    constexpr size_t stream<Fn, T>::count() && noexcept         { return _count; }
 }
