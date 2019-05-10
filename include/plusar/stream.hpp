@@ -40,6 +40,8 @@ namespace plusar
 
         constexpr auto take(size_t limit) const;
 
+        constexpr auto skip(size_t limit) const;
+
         template<class OutputIt>
         constexpr void collect(OutputIt it) const;
         template<class OutputIt>
@@ -146,6 +148,23 @@ namespace plusar
             if (!limit)
                 return nullopt;
             --limit;
+            return self.next();
+        });
+    }
+
+    template<typename Fn, typename T>
+    constexpr auto stream<Fn, T>::skip(size_t limit) const
+    {
+        stream self(*this);
+        return make_stream([self = std::move(self), limit] () mutable -> optional<T>
+        {
+            while(limit)
+            {
+                optional<T> v = self.next();
+                if (!v)
+                    return v;
+                --limit;
+            }
             return self.next();
         });
     }

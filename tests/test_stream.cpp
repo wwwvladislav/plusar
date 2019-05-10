@@ -42,6 +42,20 @@ TEST_CASE("Take N elements", "[stream]" ) {
                 .collect() == 15);
 }
 
+TEST_CASE("Skip N elements", "[stream]" ) {
+    REQUIRE(make_stream([n = 0]() mutable { return make_optional(n++); })
+                .skip(3)
+                .take(3)
+                .reduce(0, std::plus<>())
+                .collect() == 12);
+
+    REQUIRE(make_stream([n = 0]() mutable { return make_optional(n++); })
+                .take(6)
+                .skip(3)
+                .reduce(0, std::plus<>())
+                .collect() == 12);
+}
+
 TEST_CASE("Collect items from stream", "[stream]" ) {
     std::vector<int> v;
 
