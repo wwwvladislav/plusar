@@ -5,4 +5,6 @@ include_directories(
     ../include
 )
 
+add_definitions(-Wall -pedantic)
+
 add_executable(example-basic example_basic.cpp)
