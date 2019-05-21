@@ -12,23 +12,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(plusar)
 
-set(PLUSAR_MAJOR_VERSION 1)
-set(PLUSAR_MINOR_VERSION 0)
-set(PLUSAR_PATCH_VERSION 0)
-
-set(PLUSAR_VERSION ${PLUSAR_MAJOR_VERSION}.${PLUSAR_MINOR_VERSION}.${PLUSAR_PATCH_VERSION})
-
 #*********************************************************
 # set build type
 #*********************************************************
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
-
-#*********************************************************
-# module path
-#*********************************************************
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 #*********************************************************
 # output directory
@@ -54,7 +43,7 @@ endif()
 if (MSVC)
     add_definitions(/W4)
 elseif (CMAKE_COMPILER_IS_GNUCXX)
-    add_definitions(-Wall)
+    add_definitions(-Wall -pedantic)
 else ()
     message("Unknown compiler")
 endif ()
@@ -86,7 +75,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PLUSAR_OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PLUSAR_OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PLUSAR_OUTPUT_DIR})
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

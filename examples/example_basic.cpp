@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv)
 {
-    int v = plusar::make_stream([]() { return plusar::make_optional(std::make_tuple(1, 2)); })
+    int v = plusar::make_stream([]() { return std::make_optional(std::make_tuple(1, 2)); })
        .skip(10)
        .map([](auto const &t) { return std::get<0>(t) + std::get<1>(t); })
        .take(10)

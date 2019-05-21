@@ -5,6 +5,7 @@
 #include <iterator>
 
 using namespace plusar;
+using namespace std;
 
 TEST_CASE("Stream creation by initializer list", "[stream]" ) {
     REQUIRE(make_stream({ 42 })

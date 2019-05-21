@@ -1,11 +1,12 @@
 #pragma once
-#include "type_traits.hpp"
-#include "optional.hpp"
+#include <type_traits>
+#include <optional>
 #include <initializer_list>
+#include <cstddef>
 
 namespace plusar
 {
-    template<typename Fn, typename T = typename std::result_of_t<Fn()>::value_type>
+    template<typename Fn>
     class stream
     {
         Fn _fn;
@@ -13,6 +14,9 @@ namespace plusar
         stream() = delete;
         stream & operator = (stream const &) = delete;
         stream & operator = (stream &&) = delete;
+
+    public:
+        using type = typename std::result_of_t<Fn()>::value_type;
 
     public:
         stream(stream const &) noexcept(std::is_nothrow_copy_constructible<Fn>());
@@ -27,7 +31,7 @@ namespace plusar
             typename... Args,
             std::enable_if_t<std::is_constructible<Fn, Args&&...>::value, int>...
         >
-        constexpr explicit stream(in_place_t, Args&&... args) noexcept(std::is_nothrow_constructible<Fn, Args...>());
+        constexpr explicit stream(Args&&... args) noexcept(std::is_nothrow_constructible<Fn, Args...>());
 
         template<typename FnPredicate>
         constexpr auto filter(FnPredicate && pred) const;
@@ -47,17 +51,17 @@ namespace plusar
         template<class OutputIt>
         constexpr void collect(OutputIt it);
 
-        constexpr T collect() const;
-        constexpr T collect();
+        constexpr type collect() const;
+        constexpr type collect();
 
-        constexpr optional<T> next() const;
-        constexpr optional<T> next();
+        constexpr std::optional<type> next() const;
+        constexpr std::optional<type> next();
     };
 
-    template <typename Fn, typename T = typename std::result_of_t<Fn()>::value_type>
+    template <typename Fn>
     constexpr auto make_stream(Fn && fn)
     {
-        return stream<std::decay_t<Fn>, T>(std::forward<Fn>(fn));
+        return stream<std::decay_t<Fn>>(std::forward<Fn>(fn));
     }
 
     template <typename T>
@@ -65,146 +69,138 @@ namespace plusar
     {
         auto fn = [il = std::move(il), it = il.begin()]() mutable
         {
-            return it == il.end() ? nullopt : make_optional(*(it++));
+            return it == il.end() ? std::nullopt : std::make_optional(*(it++));
         };
-        return stream<decltype(fn), T>(std::move(fn));
+        return stream<decltype(fn)>(std::move(fn));
     }
 
-    template<typename Fn, typename T>
-    stream<Fn, T>::stream(stream const &other) noexcept(std::is_nothrow_copy_constructible<Fn>()):
+    template<typename Fn>
+    stream<Fn>::stream(stream const &other) noexcept(std::is_nothrow_copy_constructible<Fn>()):
         _fn(other._fn)
     {}
 
-    template<typename Fn, typename T>
-    stream<Fn, T>::stream(stream &&other) noexcept(std::is_nothrow_move_constructible<Fn>::value
+    template<typename Fn>
+    stream<Fn>::stream(stream &&other) noexcept(std::is_nothrow_move_constructible<Fn>::value
                                                    && std::is_nothrow_copy_constructible<Fn>::value):
         _fn(std::forward<Fn>(other._fn))
     {}
 
-    template<typename Fn, typename T>
-    stream<Fn, T>::stream(Fn && fn) noexcept(std::is_nothrow_move_constructible<Fn>::value
-                                             && std::is_nothrow_copy_constructible<Fn>::value):
+    template<typename Fn>
+    stream<Fn>::stream(Fn && fn) noexcept(std::is_nothrow_move_constructible<Fn>::value
+                                          && std::is_nothrow_copy_constructible<Fn>::value):
         _fn(std::forward<Fn>(fn))
     {}
 
-    template<
-        typename Fn,
-        typename T
-    >
+    template<typename Fn>
     template<
         typename... Args,
         std::enable_if_t<std::is_constructible<Fn, Args&&...>::value, int>...
     >
-    constexpr stream<Fn, T>::stream(in_place_t, Args&&... args) noexcept(std::is_nothrow_constructible<Fn, Args...>()):
+    constexpr stream<Fn>::stream(Args&&... args) noexcept(std::is_nothrow_constructible<Fn, Args...>()):
         _fn(std::forward<Args>(args)...)
     {}
 
-    template<typename Fn, typename T>
+    template<typename Fn>
     template<typename FnPredicate>
-    constexpr auto stream<Fn, T>::filter(FnPredicate && pred) const
+    constexpr auto stream<Fn>::filter(FnPredicate && pred) const
     {
-        stream self(*this);
-        return make_stream([self = std::move(self), pred = std::forward<FnPredicate>(pred)]() mutable
+        return make_stream([src = *this, pred = std::forward<FnPredicate>(pred)]() mutable -> std::optional<type>
         {
-            for(optional<T> sv = self.next(); sv; sv = self.next())
+            for(auto sv = src.next(); sv; sv = src.next())
                 if(pred(*sv))
                     return sv;
-            return optional<T>(nullopt);
+            return std::nullopt;
         });
     }
 
-    template<typename Fn, typename T>
+    template<typename Fn>
     template<typename FnR>
-    constexpr auto stream<Fn, T>::map(FnR && fn) const
+    constexpr auto stream<Fn>::map(FnR && fn) const
     {
-        stream self(*this);
-        return make_stream([self = std::move(self), fn = std::forward<FnR>(fn)]() mutable
+        return make_stream([src = *this, fn = std::forward<FnR>(fn)]() mutable
         {
-            optional<T> sv = self.next();
-            return sv ? make_optional(fn(*sv)) : nullopt;
+            auto sv = src.next();
+            return sv ? std::make_optional(fn(*sv)) : std::nullopt;
         });
     }
 
-    template<typename Fn, typename T>
+    template<typename Fn>
     template<typename FnR, typename R>
-    constexpr auto stream<Fn, T>::reduce(R && v, FnR && fn) const
+    constexpr auto stream<Fn>::reduce(R && v, FnR && fn) const
     {
-        stream self(*this);
-        return make_stream([self = std::move(self), v = std::forward<R>(v), fn = std::forward<FnR>(fn)]() mutable
+        return make_stream([src = *this, v = std::forward<R>(v), fn = std::forward<FnR>(fn)]() mutable
         {
             R res = v;
-            for(optional<T> v = self.next(); v; v = self.next())
+            for(auto v = src.next(); v; v = src.next())
                 res = fn(res, *v);
-            return make_optional(res);
+            return std::make_optional(res);
         });
     }
 
-    template<typename Fn, typename T>
-    constexpr auto stream<Fn, T>::take(size_t limit) const
+    template<typename Fn>
+    constexpr auto stream<Fn>::take(size_t limit) const
     {
-        stream self(*this);
-        return make_stream([self = std::move(self), limit] () mutable -> optional<T>
+        return make_stream([src = *this, limit] () mutable -> std::optional<type>
         {
             if (!limit)
-                return nullopt;
+                return std::nullopt;
             --limit;
-            return self.next();
+            return src.next();
         });
     }
 
-    template<typename Fn, typename T>
-    constexpr auto stream<Fn, T>::skip(size_t limit) const
+    template<typename Fn>
+    constexpr auto stream<Fn>::skip(size_t limit) const
     {
-        stream self(*this);
-        return make_stream([self = std::move(self), limit] () mutable -> optional<T>
+        return make_stream([src = *this, limit] () mutable -> std::optional<type>
         {
             while(limit)
             {
-                optional<T> v = self.next();
+                auto v = src.next();
                 if (!v)
                     return v;
                 --limit;
             }
-            return self.next();
+            return src.next();
         });
     }
 
-    template<typename Fn, typename T>
+    template<typename Fn>
     template<class OutputIt>
-    constexpr void stream<Fn, T>::collect(OutputIt it) const
+    constexpr void stream<Fn>::collect(OutputIt it) const
     {
-        for(optional<T> v = next(); v; v = next())
+        for(auto v = next(); v; v = next())
             ++it = *v;
     }
 
-    template<typename Fn, typename T>
+    template<typename Fn>
     template<class OutputIt>
-    constexpr void stream<Fn, T>::collect(OutputIt it)
+    constexpr void stream<Fn>::collect(OutputIt it)
     {
-        for(optional<T> v = next(); v; v = next())
+        for(auto v = next(); v; v = next())
             ++it = *v;
     }
 
-    template<typename Fn, typename T>
-    constexpr T stream<Fn, T>::collect() const
+    template<typename Fn>
+    constexpr typename stream<Fn>::type stream<Fn>::collect() const
     {
         return *next();
     }
 
-    template<typename Fn, typename T>
-    constexpr T stream<Fn, T>::collect()
+    template<typename Fn>
+    constexpr typename stream<Fn>::type stream<Fn>::collect()
     {
         return *next();
     }
 
-    template<typename Fn, typename T>
-    constexpr optional<T> stream<Fn, T>::next() const
+    template<typename Fn>
+    constexpr std::optional<typename stream<Fn>::type> stream<Fn>::next() const
     {
         return _fn();
     }
 
-    template<typename Fn, typename T>
-    constexpr optional<T> stream<Fn, T>::next()
+    template<typename Fn>
+    constexpr std::optional<typename stream<Fn>::type> stream<Fn>::next()
     {
         return _fn();
     }
