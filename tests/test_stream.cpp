@@ -36,6 +36,20 @@ TEST_CASE("Reduce function", "[stream]" ) {
                 .collect() == 42);
 }
 
+TEST_CASE("Flatten stream", "[stream]" ) {
+    auto s1 = make_stream({ 1, 2, 3 });
+    auto s2 = make_stream({ 4, 5, 6 });
+    auto s3 = make_stream({ 7, 8, 9 });
+
+    auto ss = make_stream({ s1, s2, s3 })
+                .flatten();
+
+    for(int i = 1; i < 10; ++i)
+        REQUIRE(ss.collect() == i);
+
+    REQUIRE_THROWS(ss.collect());
+}
+
 TEST_CASE("Take N elements", "[stream]" ) {
     REQUIRE(make_stream([]() { return make_optional(5); })
                 .take(3)
