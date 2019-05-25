@@ -72,6 +72,9 @@ namespace plusar
 
         constexpr auto skip(size_t limit) const;
 
+        template<typename FnStream, typename FnZip>
+        constexpr auto zip(stream<FnStream> && other, FnZip && fn) const;
+
         template<class OutputIt>
         constexpr void collect(OutputIt it) const;
         template<class OutputIt>
@@ -195,6 +198,18 @@ namespace plusar
                 --limit;
             }
             return src.next();
+        });
+    }
+
+    template<typename Fn>
+    template<typename FnStream, typename FnZip>
+    constexpr auto stream<Fn>::zip(stream<FnStream> && other, FnZip && fn) const
+    {
+        return make_stream([src = *this, other = std::forward<stream<FnStream>>(other), fn = std::forward<FnZip>(fn)] () mutable
+        {
+            auto a = src.next();
+            auto b = other.next();
+            return a && b ? std::make_optional(fn(*a, *b)) : std::nullopt;
         });
     }
 

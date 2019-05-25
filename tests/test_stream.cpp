@@ -71,6 +71,17 @@ TEST_CASE("Skip N elements", "[stream]" ) {
                 .collect() == 12);
 }
 
+TEST_CASE("Zip streams", "[stream]" ) {
+    auto s1 = make_stream({ 1, 2, 3 });
+    auto s2 = make_stream({ -1, -2, -3, -4 });
+    auto ss = s1.zip(std::move(s2), std::plus<>());
+
+    for(int i = 0; i < 3; ++i)
+        REQUIRE(ss.collect() == 0);
+
+    REQUIRE_THROWS(ss.collect());
+}
+
 TEST_CASE("Collect items from stream", "[stream]" ) {
     std::vector<int> v;
 
