@@ -35,6 +35,8 @@ int main(int argc, char **argv)
 ```
 
 ## Building Plusar from Source
+Plusar is header only library. So it isn't required to build it. Just copy inlude directory to your own project.
+Build files are required only for tests and sample project.
 ```
 mkdir build
 cd build
