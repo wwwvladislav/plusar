@@ -45,7 +45,7 @@ TEST_CASE("Flatten stream", "[stream]" ) {
                 .flatten();
 
     for(int i = 1; i < 10; ++i)
-        REQUIRE(ss.collect() == i);
+        REQUIRE(ss.next() == i);
 
     REQUIRE_THROWS(ss.collect());
 }
@@ -77,9 +77,38 @@ TEST_CASE("Zip streams", "[stream]" ) {
     auto ss = s1.zip(std::move(s2), std::plus<>());
 
     for(int i = 0; i < 3; ++i)
-        REQUIRE(ss.collect() == 0);
+        REQUIRE(ss.next() == 0);
 
     REQUIRE_THROWS(ss.collect());
+}
+
+TEST_CASE("Slice stream", "[stream]" ) {
+    size_t step = 2;
+
+    for(size_t start = 0; start < 5; ++start)
+    {
+        for(size_t end = start; end < 5; ++end)
+        {
+            auto s = make_stream([n = 0]() mutable { return make_optional(n++); })
+                        .slice(start, end, step);
+            for(size_t i = start; i < end; i += step)
+                REQUIRE(s.next() == i);
+            REQUIRE_THROWS(s.collect());
+        }
+    }
+}
+
+TEST_CASE("Slice stream to end", "[stream]" ) {
+    size_t step = 2;
+
+    for(size_t start = 0; start < 5; ++start)
+    {
+        auto s = make_stream({ 0, 1, 2, 3, 4 })
+                    .slice_to_end(start, step);
+        for(size_t i = start; i < 5; i += step)
+            REQUIRE(s.next() == i);
+        REQUIRE_THROWS(s.collect());
+    }
 }
 
 TEST_CASE("Collect items from stream", "[stream]" ) {

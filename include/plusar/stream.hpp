@@ -75,6 +75,10 @@ namespace plusar
         template<typename FnStream, typename FnZip>
         constexpr auto zip(stream<FnStream> && other, FnZip && fn) const;
 
+        constexpr auto slice(size_t start, size_t end, size_t step = 1) const;
+
+        constexpr auto slice_to_end(size_t start, size_t step = 1) const;
+
         template<class OutputIt>
         constexpr void collect(OutputIt it) const;
         template<class OutputIt>
@@ -210,6 +214,40 @@ namespace plusar
             auto a = src.next();
             auto b = other.next();
             return a && b ? std::make_optional(fn(*a, *b)) : std::nullopt;
+        });
+    }
+
+    template<typename Fn>
+    constexpr auto stream<Fn>::slice(size_t start, size_t end, size_t step) const
+    {
+        if (!step)
+            step = 1;
+        if (end < start)
+            end = start;
+        return slice_to_end(start, step)
+                    .take((end - start + step - 1) / step);
+    }
+
+    template<typename Fn>
+    constexpr auto stream<Fn>::slice_to_end(size_t start, size_t step) const
+    {
+        if (!step)
+            step = 1;
+
+        return make_stream([src = skip(start), step] () mutable -> std::optional<type>
+        {
+            auto v = src.next();
+            if (!v)
+                return v;
+
+            for(size_t i = 1; i < step; ++i)
+            {
+                auto t = src.next();
+                if (!t)
+                    break;
+            }
+
+            return v;
         });
     }
 
