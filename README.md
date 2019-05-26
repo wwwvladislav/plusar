@@ -11,8 +11,7 @@ Plusar is an open source stream processing framework.
 ### Features
 * The realtime stream processing capabilities.
 * Fast as speed of light, rapid like a pulsars jet.
-* TODO: Good scaling on different cores of CPU.
-* TODO: Different types of windows (time, count) for analysis.
+* Different types of stream processing algorithms (map, reduce, etc).
 
 ### Simple Example
 ```cpp
