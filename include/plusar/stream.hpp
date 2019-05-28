@@ -2,8 +2,6 @@
 #include <type_traits>
 #include <optional>
 #include <cstddef>
-#include <new>
-#include <memory>
 
 namespace plusar
 {
@@ -13,6 +11,8 @@ namespace plusar
         Fn _fn;
 
         stream() = delete;
+        stream & operator = (stream const &other) = delete;
+        stream & operator = (stream &&other) = delete;
 
     public:
         using type = typename std::result_of_t<Fn()>::value_type;
@@ -41,21 +41,6 @@ namespace plusar
         constexpr explicit stream(Args&&... args) noexcept(std::is_nothrow_constructible<Fn, Args...>()):
             _fn(std::forward<Args>(args)...)
         {}
-
-        constexpr stream & operator = (stream const &other) noexcept(std::is_nothrow_copy_constructible<Fn>())
-        {
-            _fn.~Fn();
-            ::new((void*)std::addressof(_fn))Fn(std::forward<Fn>(other._fn));
-            return *this;
-        }
-
-        constexpr stream & operator = (stream &&other) noexcept(std::is_nothrow_move_constructible<Fn>::value
-                                                                && std::is_nothrow_copy_constructible<Fn>::value)
-        {
-            _fn.~Fn();
-            ::new((void*)std::addressof(_fn))Fn(std::forward<Fn>(other._fn));
-            return *this;
-        }
 
         template<typename FnPredicate>
         constexpr auto filter(FnPredicate && pred) const;
@@ -121,6 +106,18 @@ namespace plusar
         return stream<decltype(fn)>(std::move(fn));
     }
 
+    namespace internal
+    {
+        template<typename T>
+        constexpr void copy_opt(std::optional<T> &dst, std::optional<T> const &src) noexcept(std::is_nothrow_copy_constructible<T>())
+        {
+            if (src.has_value())
+                dst.emplace(*src);
+            else
+                dst.reset();
+        }
+    }
+
     template<typename Fn>
     template<typename FnPredicate>
     constexpr auto stream<Fn>::filter(FnPredicate && pred) const
@@ -164,9 +161,9 @@ namespace plusar
         return make_stream([src = *this, current = std::optional<type>()] () mutable -> std::optional<typename type::type>
         {
             if (!current)
-                current = src.next();
+                internal::copy_opt(current, src.next());
 
-            for(;current; current = src.next())
+            for(;current; internal::copy_opt(current, src.next()))
             {
                 auto v = current->next();
                 if (v)

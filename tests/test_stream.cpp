@@ -36,13 +36,32 @@ TEST_CASE("Reduce function", "[stream]" ) {
                 .collect() == 42);
 }
 
-TEST_CASE("Flatten stream", "[stream]" ) {
+TEST_CASE("Flatten stream 1", "[stream]" ) {
     auto s1 = make_stream({ 1, 2, 3 });
     auto s2 = make_stream({ 4, 5, 6 });
     auto s3 = make_stream({ 7, 8, 9 });
 
     auto ss = make_stream({ s1, s2, s3 })
                 .flatten();
+
+    for(int i = 1; i < 10; ++i)
+        REQUIRE(ss.next() == i);
+
+    REQUIRE_THROWS(ss.collect());
+}
+
+TEST_CASE("Flatten stream 2", "[stream]" ) {
+    int n = 0;
+    auto ss = make_stream([&n]()
+    {
+        return std::make_optional(make_stream([&n] () mutable -> std::optional<int>
+        {
+            return std::make_optional(++n);
+        })
+        .take(3));
+    })
+    .take(3)
+    .flatten();
 
     for(int i = 1; i < 10; ++i)
         REQUIRE(ss.next() == i);
