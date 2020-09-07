@@ -2,6 +2,7 @@
 #include <type_traits>
 #include <optional>
 #include <cstddef>
+#include <utility>
 
 namespace plusar
 {
@@ -66,15 +67,8 @@ namespace plusar
 
         template<class OutputIt>
         constexpr void collect(OutputIt it) const;
-        template<class OutputIt>
-        constexpr void collect(OutputIt it);
 
         constexpr type collect() const
-        {
-            return next().value();
-        }
-
-        constexpr type collect()
         {
             return next().value();
         }
@@ -83,12 +77,40 @@ namespace plusar
         {
             return _fn();
         }
-
-        constexpr std::optional<type> next()
-        {
-            return _fn();
-        }
     };
+
+    namespace internal
+    {
+        struct mutable_idx
+        {
+            mutable size_t value = 0;
+        };
+
+        template<typename T>
+        class mutable_optional
+        {
+            mutable std::optional<T> _value = std::nullopt;
+
+        public:
+            void operator=(std::optional<T> const &rhs) const
+            {
+                if (rhs.has_value())
+                    _value.emplace(rhs.value());
+                else
+                    _value.reset();
+            }
+
+            std::optional<T> const & operator->() const
+            {
+                return _value;
+            }
+
+            operator bool() const
+            {
+                return _value.has_value();
+            }
+        };
+    }
 
     template <typename Fn>
     constexpr auto make_stream(Fn && fn)
@@ -99,30 +121,22 @@ namespace plusar
     template <typename T, size_t N>
     constexpr auto make_stream(T const (&arr)[N])
     {
-        auto fn = [arr, n = 0u]() mutable
+        using internal::mutable_idx;
+
+        auto fn = [arr, n = mutable_idx{}]()
         {
-            return n >= N ? std::nullopt : std::make_optional(arr[n++]);
+            return n.value >= N
+                        ? std::nullopt
+                        : std::make_optional(arr[n.value++]);
         };
         return stream<decltype(fn)>(std::move(fn));
-    }
-
-    namespace internal
-    {
-        template<typename T>
-        constexpr void copy_opt(std::optional<T> &dst, std::optional<T> const &src) noexcept(std::is_nothrow_copy_constructible<T>())
-        {
-            if (src.has_value())
-                dst.emplace(*src);
-            else
-                dst.reset();
-        }
     }
 
     template<typename Fn>
     template<typename FnPredicate>
     constexpr auto stream<Fn>::filter(FnPredicate && pred) const
     {
-        return make_stream([src = *this, pred = std::forward<FnPredicate>(pred)]() mutable -> std::optional<type>
+        return make_stream([src = *this, pred = std::forward<FnPredicate>(pred)]() -> std::optional<type>
         {
             for(auto sv = src.next(); sv; sv = src.next())
                 if(pred(*sv))
@@ -135,7 +149,7 @@ namespace plusar
     template<typename FnR>
     constexpr auto stream<Fn>::map(FnR && fn) const
     {
-        return make_stream([src = *this, fn = std::forward<FnR>(fn)]() mutable
+        return make_stream([src = *this, fn = std::forward<FnR>(fn)]()
         {
             auto sv = src.next();
             return sv ? std::make_optional(fn(*sv)) : std::nullopt;
@@ -146,7 +160,7 @@ namespace plusar
     template<typename FnR, typename R>
     constexpr auto stream<Fn>::reduce(R && v, FnR && fn) const
     {
-        return make_stream([src = *this, v = std::forward<R>(v), fn = std::forward<FnR>(fn)]() mutable
+        return make_stream([src = *this, v = std::forward<R>(v), fn = std::forward<FnR>(fn)]()
         {
             R res = v;
             for(auto v = src.next(); v; v = src.next())
@@ -158,14 +172,16 @@ namespace plusar
     template<typename Fn>
     constexpr auto stream<Fn>::flatten() const
     {
-        return make_stream([src = *this, current = std::optional<type>()] () mutable -> std::optional<typename type::type>
+        using namespace internal;
+
+        return make_stream([src = *this, current = mutable_optional<type>{}] () -> std::optional<typename type::type>
         {
             if (!current)
-                internal::copy_opt(current, src.next());
+                current = src.next();
 
-            for(;current; internal::copy_opt(current, src.next()))
+            for(;current; current = src.next())
             {
-                auto v = current->next();
+                std::optional<typename type::type> const &v = current->next();
                 if (v)
                     return v;
             }
@@ -177,11 +193,13 @@ namespace plusar
     template<typename Fn>
     constexpr auto stream<Fn>::take(size_t limit) const
     {
-        return make_stream([src = *this, limit] () mutable -> std::optional<type>
+        using internal::mutable_idx;
+
+        return make_stream([src = *this, n = mutable_idx{}, limit] () -> std::optional<type>
         {
-            if (!limit)
+            if (n.value >= limit)
                 return std::nullopt;
-            --limit;
+            ++n.value;
             return src.next();
         });
     }
@@ -189,14 +207,16 @@ namespace plusar
     template<typename Fn>
     constexpr auto stream<Fn>::skip(size_t limit) const
     {
-        return make_stream([src = *this, limit] () mutable -> std::optional<type>
+        using internal::mutable_idx;
+
+        return make_stream([src = *this, n = mutable_idx{}, limit] () -> std::optional<type>
         {
-            while(limit)
+            while(n.value < limit)
             {
                 auto v = src.next();
                 if (!v)
                     return v;
-                --limit;
+                n.value++;
             }
             return src.next();
         });
@@ -206,7 +226,7 @@ namespace plusar
     template<typename FnStream, typename FnZip>
     constexpr auto stream<Fn>::zip(stream<FnStream> && other, FnZip && fn) const
     {
-        return make_stream([src = *this, other = std::forward<stream<FnStream>>(other), fn = std::forward<FnZip>(fn)] () mutable
+        return make_stream([src = *this, other = std::forward<stream<FnStream>>(other), fn = std::forward<FnZip>(fn)] ()
         {
             auto a = src.next();
             auto b = other.next();
@@ -231,7 +251,7 @@ namespace plusar
         if (!step)
             step = 1;
 
-        return make_stream([src = skip(start), step] () mutable -> std::optional<type>
+        return make_stream([src = skip(start), step] () -> std::optional<type>
         {
             auto v = src.next();
             if (!v)
@@ -251,14 +271,6 @@ namespace plusar
     template<typename Fn>
     template<class OutputIt>
     constexpr void stream<Fn>::collect(OutputIt it) const
-    {
-        for(auto v = next(); v; v = next())
-            ++it = v.value();
-    }
-
-    template<typename Fn>
-    template<class OutputIt>
-    constexpr void stream<Fn>::collect(OutputIt it)
     {
         for(auto v = next(); v; v = next())
             ++it = v.value();

@@ -54,7 +54,7 @@ TEST_CASE("Flatten stream 2", "[stream]") {
     int n = 0;
     auto ss = make_stream([&n]()
     {
-        return std::make_optional(make_stream([&n] () mutable
+        return std::make_optional(make_stream([&n] ()
         {
             return std::make_optional(++n);
         })
@@ -77,13 +77,15 @@ TEST_CASE("Take N elements", "[stream]") {
 }
 
 TEST_CASE("Skip N elements", "[stream]") {
-    REQUIRE(make_stream([n = 0]() mutable { return make_optional(n++); })
+    int n = 0;
+    REQUIRE(make_stream([&n]() { return make_optional(n++); })
                 .skip(3)
                 .take(3)
                 .reduce(0, std::plus<>())
                 .collect() == 12);
 
-    REQUIRE(make_stream([n = 0]() mutable { return make_optional(n++); })
+    int m = 0;
+    REQUIRE(make_stream([&m]() { return make_optional(m++); })
                 .take(6)
                 .skip(3)
                 .reduce(0, std::plus<>())
@@ -108,7 +110,8 @@ TEST_CASE("Slice stream", "[stream]") {
     {
         for(size_t end = start; end < 5; ++end)
         {
-            auto s = make_stream([n = 0]() mutable { return make_optional(n++); })
+            int n = 0;
+            auto s = make_stream([&n]() { return make_optional(n++); })
                         .slice(start, end, step);
             for(size_t i = start; i < end; i += step)
                 REQUIRE(s.next() == i);
@@ -132,8 +135,9 @@ TEST_CASE("Slice stream to end", "[stream]") {
 
 TEST_CASE("Collect items from stream", "[stream]") {
     std::vector<int> v;
+    int n = 0;
 
-    make_stream([n = 0]() mutable { return make_optional(n++); })
+    make_stream([&n]() { return make_optional(n++); })
         .take(3)
         .collect(std::back_inserter(v));
 
@@ -143,8 +147,8 @@ TEST_CASE("Collect items from stream", "[stream]") {
 }
 
 TEST_CASE("Read next item from stream", "[stream]") {
-
-    auto s = make_stream([n = 0]() mutable { return make_optional(n++); });
+    int n = 0;
+    auto s = make_stream([&n]() { return make_optional(n++); });
     REQUIRE(s.next() == 0);
     REQUIRE(s.next() == 1);
     REQUIRE(s.next() == 2);

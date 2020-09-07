@@ -25,7 +25,7 @@ Plusar is an open source stream processing framework.
 
 int main(int argc, char **argv)
 {
-    int v = plusar::make_stream([]() { return plusar::make_optional(std::make_tuple(1, 2)); })
+    int v = plusar::make_stream([]() { return std::make_optional(std::make_tuple(1, 2)); })
        .map([](auto const &t) { return std::get<0>(t) + std::get<1>(t); })
        .take(10)
        .map([](int v) { return v * v; })
